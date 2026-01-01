@@ -28,8 +28,13 @@
             "output": "dist"
         },
         "win": {
-            "target": "nsis",
-            "icon": "assets/icon.ico"
+            "target": [
+                "nsis",
+                "portable"
+            ],
+            "icon": "assets/icon.ico",
+            "publisherName": "MyDesk Team",
+            "signAndEditExecutable": false
         },
         "mac": {
             "target": "dmg",
