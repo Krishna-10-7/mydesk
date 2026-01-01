@@ -27,6 +27,54 @@ const iceServers = {
 // ========================================
 // Initialization
 // ========================================
+// Debug Console Interceptor
+(function () {
+    const debugContent = document.getElementById('debugContent');
+    if (!debugContent) return;
+
+    function logToScreen(type, args) {
+        const line = document.createElement('div');
+        line.style.borderBottom = '1px solid #222';
+        line.style.padding = '2px 0';
+
+        // Format timestamp
+        const time = new Date().toLocaleTimeString();
+
+        // Format args
+        const message = Array.from(args).map(arg => {
+            if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
+            if (typeof arg === 'object') return JSON.stringify(arg);
+            return String(arg);
+        }).join(' ');
+
+        line.innerHTML = `<span style="color: #666">[${time}]</span> <span style="color: ${type === 'error' ? '#f55' : type === 'warn' ? '#fb5' : '#fff'}">${message}</span>`;
+        debugContent.appendChild(line);
+
+        // Auto scroll
+        debugContent.parentElement.scrollTop = debugContent.parentElement.scrollHeight;
+    }
+
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.log = function (...args) {
+        originalLog.apply(console, args);
+        logToScreen('info', args);
+    };
+    console.error = function (...args) {
+        originalError.apply(console, args);
+        logToScreen('error', args);
+        // Also show overlay on error
+        const consoleEl = document.getElementById('debugConsole');
+        if (consoleEl && consoleEl.style.display === 'none') consoleEl.style.display = 'block';
+    };
+    console.warn = function (...args) {
+        originalWarn.apply(console, args);
+        logToScreen('warn', args);
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     initWindowControls();
     initNavigation();

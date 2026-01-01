@@ -1,6 +1,6 @@
 {
     "name": "mydesk",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "Free Remote Desktop Sharing Application",
     "main": "src/main/main.js",
     "author": {
@@ -32,6 +32,7 @@
     "build": {
         "appId": "in.runtime.mydesk",
         "productName": "MyDesk",
+        "asar": false,
         "publish": null,
         "directories": {
             "output": "dist"
