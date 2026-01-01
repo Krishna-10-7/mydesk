@@ -38,9 +38,9 @@ export default function Home() {
   }, []);
 
   const downloadLinks = {
-    Windows: 'https://github.com/yourusername/mydesk/releases/latest/download/MyDesk-Setup.exe',
-    macOS: 'https://github.com/yourusername/mydesk/releases/latest/download/MyDesk.dmg',
-    Linux: 'https://github.com/yourusername/mydesk/releases/latest/download/MyDesk.AppImage',
+    Windows: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-Setup.exe',
+    macOS: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.dmg',
+    Linux: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.AppImage',
   };
 
   return (
@@ -55,7 +55,7 @@ export default function Home() {
           <div className="nav-links">
             <a href="#features">Features</a>
             <a href="#download">Download</a>
-            <a href="https://github.com/yourusername/mydesk" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/Krishna-10-7/mydesk" target="_blank" rel="noopener">GitHub</a>
           </div>
         </div>
       </nav>
@@ -177,7 +177,7 @@ export default function Home() {
               icon={<WindowsIcon size={40} />}
               version="1.0.0"
               requirements="Windows 10 or later"
-              downloadUrl="https://github.com/yourusername/mydesk/releases/latest/download/MyDesk-Setup.exe"
+              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-Setup.exe"
               extension=".exe"
               highlighted={os === 'Windows'}
             />
@@ -186,7 +186,7 @@ export default function Home() {
               icon={<AppleIcon size={40} />}
               version="1.0.0"
               requirements="macOS 10.15 or later"
-              downloadUrl="https://github.com/yourusername/mydesk/releases/latest/download/MyDesk.dmg"
+              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.dmg"
               extension=".dmg"
               highlighted={os === 'macOS'}
             />
@@ -195,9 +195,9 @@ export default function Home() {
               icon={<LinuxIcon size={40} />}
               version="1.0.0"
               requirements="Ubuntu 18.04+, Fedora 32+"
-              downloadUrl="https://github.com/yourusername/mydesk/releases/latest/download/MyDesk.AppImage"
+              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.AppImage"
               extension=".AppImage"
-              altUrl="https://github.com/yourusername/mydesk/releases/latest/download/mydesk.deb"
+              altUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/mydesk.deb"
               altExtension=".deb"
               highlighted={os === 'Linux'}
             />
@@ -241,7 +241,7 @@ export default function Home() {
             </div>
             <div className="footer-column">
               <h4>Resources</h4>
-              <a href="https://github.com/yourusername/mydesk" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://github.com/Krishna-10-7/mydesk" target="_blank" rel="noopener">GitHub</a>
               <a href="#">Report Issue</a>
               <a href="#">Changelog</a>
             </div>
