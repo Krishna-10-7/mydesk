@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const { io } = require('socket.io-client');
 
 // Expose protected methods to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -19,6 +20,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Screen info
     getScreenSize: () => ipcRenderer.invoke('get-screen-size'),
+});
+
+// Expose socket.io for signaling
+contextBridge.exposeInMainWorld('socketIO', {
+    connect: (url, options) => {
+        const socket = io(url, options);
+        return {
+            on: (event, callback) => socket.on(event, callback),
+            emit: (event, data) => socket.emit(event, data),
+            disconnect: () => socket.disconnect(),
+            get connected() { return socket.connected; },
+            get id() { return socket.id; }
+        };
+    }
 });
 
 // Expose platform info

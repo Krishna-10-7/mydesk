@@ -99,22 +99,47 @@ function showScreen(screenName) {
 // Signaling Server Connection
 // ========================================
 function connectToSignalingServer() {
-    // Load socket.io client from CDN
-    const script = document.createElement('script');
-    script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
-    script.onload = () => {
+    // Use socket.io from preload if available, otherwise try CDN
+    if (window.socketIO) {
         initializeSocket();
-    };
-    script.onerror = () => {
-        console.error('Failed to load Socket.io client');
-        // Fallback to mock socket for offline testing
-        socket = createMockSocket();
-    };
-    document.head.appendChild(script);
+    } else {
+        // Fallback: Load socket.io client from CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+        script.onload = () => {
+            initializeSocketFromGlobal();
+        };
+        script.onerror = () => {
+            console.error('Failed to load Socket.io client');
+            socket = createMockSocket();
+        };
+        document.head.appendChild(script);
+    }
 }
 
 function initializeSocket() {
     try {
+        console.log('Connecting to signaling server:', SIGNALING_SERVER);
+
+        socket = window.socketIO.connect(SIGNALING_SERVER, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+
+        setupSocketEvents();
+        console.log('Socket initialized via preload bridge');
+    } catch (error) {
+        console.error('Failed to initialize socket:', error);
+        socket = createMockSocket();
+    }
+}
+
+function initializeSocketFromGlobal() {
+    try {
+        console.log('Connecting to signaling server (CDN):', SIGNALING_SERVER);
+
         socket = io(SIGNALING_SERVER, {
             transports: ['websocket', 'polling'],
             reconnection: true,
@@ -122,83 +147,87 @@ function initializeSocket() {
             reconnectionDelay: 1000
         });
 
-        socket.on('connect', () => {
-            console.log('Connected to signaling server:', socket.id);
-        });
-
-        socket.on('disconnect', () => {
-            console.log('Disconnected from signaling server');
-        });
-
-        socket.on('connect_error', (error) => {
-            console.error('Connection error:', error.message);
-        });
-
-        // Room events
-        socket.on('room-created', ({ roomId: createdRoomId, success }) => {
-            if (success) {
-                console.log('Room created:', createdRoomId);
-            }
-        });
-
-        socket.on('room-joined', ({ roomId: joinedRoomId, success }) => {
-            if (success) {
-                console.log('Joined room:', joinedRoomId);
-                document.getElementById('connectionStatus')?.classList.add('hidden');
-                document.getElementById('viewerRoomId').textContent = roomId;
-                showScreen('viewer');
-            }
-        });
-
-        socket.on('room-error', ({ error }) => {
-            console.error('Room error:', error);
-            document.getElementById('connectionStatus')?.classList.add('hidden');
-            alert('Connection failed: ' + error);
-        });
-
-        // Viewer connected to our room
-        socket.on('viewer-joined', ({ viewerId, viewerCount }) => {
-            console.log('Viewer joined:', viewerId, 'Total:', viewerCount);
-            updateViewersList(viewerCount);
-        });
-
-        socket.on('viewer-left', ({ viewerId, viewerCount }) => {
-            console.log('Viewer left:', viewerId, 'Total:', viewerCount);
-            updateViewersList(viewerCount);
-        });
-
-        // Start call (host should create offer)
-        socket.on('start-call', async ({ viewerId }) => {
-            console.log('Starting call with viewer:', viewerId);
-            if (isHost && localStream) {
-                createPeerConnection();
-                await createOffer();
-            }
-        });
-
-        // WebRTC signaling
-        socket.on('signal', async ({ signal, senderId }) => {
-            console.log('Received signal from:', senderId, signal.type);
-            await handleSignal(signal);
-        });
-
-        socket.on('ice-candidate', async ({ candidate, senderId }) => {
-            console.log('Received ICE candidate from:', senderId);
-            await handleIceCandidate(candidate);
-        });
-
-        // Host disconnected
-        socket.on('host-disconnected', () => {
-            console.log('Host disconnected');
-            if (!isHost) {
-                document.getElementById('connectionLost')?.classList.remove('hidden');
-            }
-        });
-
+        setupSocketEvents();
+        console.log('Socket initialized via CDN');
     } catch (error) {
         console.error('Failed to initialize socket:', error);
         socket = createMockSocket();
     }
+}
+
+function setupSocketEvents() {
+    socket.on('connect', () => {
+        console.log('Connected to signaling server:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from signaling server');
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Connection error:', error.message || error);
+    });
+
+    // Room events
+    socket.on('room-created', ({ roomId: createdRoomId, success }) => {
+        if (success) {
+            console.log('Room created:', createdRoomId);
+        }
+    });
+
+    socket.on('room-joined', ({ roomId: joinedRoomId, success }) => {
+        if (success) {
+            console.log('Joined room:', joinedRoomId);
+            document.getElementById('connectionStatus')?.classList.add('hidden');
+            document.getElementById('viewerRoomId').textContent = roomId;
+            showScreen('viewer');
+        }
+    });
+
+    socket.on('room-error', ({ error }) => {
+        console.error('Room error:', error);
+        document.getElementById('connectionStatus')?.classList.add('hidden');
+        alert('Connection failed: ' + error);
+    });
+
+    // Viewer connected to our room
+    socket.on('viewer-joined', ({ viewerId, viewerCount }) => {
+        console.log('Viewer joined:', viewerId, 'Total:', viewerCount);
+        updateViewersList(viewerCount);
+    });
+
+    socket.on('viewer-left', ({ viewerId, viewerCount }) => {
+        console.log('Viewer left:', viewerId, 'Total:', viewerCount);
+        updateViewersList(viewerCount);
+    });
+
+    // Start call (host should create offer)
+    socket.on('start-call', async ({ viewerId }) => {
+        console.log('Starting call with viewer:', viewerId);
+        if (isHost && localStream) {
+            createPeerConnection();
+            await createOffer();
+        }
+    });
+
+    // WebRTC signaling
+    socket.on('signal', async ({ signal, senderId }) => {
+        console.log('Received signal from:', senderId, signal.type);
+        await handleSignal(signal);
+    });
+
+    socket.on('ice-candidate', async ({ candidate, senderId }) => {
+        console.log('Received ICE candidate from:', senderId);
+        await handleIceCandidate(candidate);
+    });
+
+    // Host disconnected
+    socket.on('host-disconnected', () => {
+        console.log('Host disconnected');
+        if (!isHost) {
+            document.getElementById('connectionLost')?.classList.remove('hidden');
+        }
+    });
 }
 
 function updateViewersList(count) {
