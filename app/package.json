@@ -1,8 +1,12 @@
 {
     "name": "mydesk",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "description": "Free Remote Desktop Sharing Application",
     "main": "src/main/main.js",
+    "files": [
+        "src/**/*",
+        "package.json"
+    ],
     "author": {
         "name": "MyDesk Team",
         "email": "mydesk@run-time.in"

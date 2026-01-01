@@ -38,9 +38,9 @@ export default function Home() {
   }, []);
 
   const downloadLinks = {
-    Windows: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.Setup.1.0.9.exe',
-    macOS: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.0.9-arm64.dmg',
-    Linux: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.0.9.AppImage',
+    Windows: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.Setup.1.1.0.exe',
+    macOS: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.1.0-arm64.dmg',
+    Linux: 'https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.1.0.AppImage',
   };
 
   return (
@@ -175,29 +175,29 @@ export default function Home() {
             <DownloadCard
               platform="Windows"
               icon={<WindowsIcon size={40} />}
-              version="1.0.9"
+              version="1.1.0"
               requirements="Windows 10 or later"
-              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.Setup.1.0.9.exe"
+              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk.Setup.1.1.0.exe"
               extension=".exe"
               highlighted={os === 'Windows'}
             />
             <DownloadCard
               platform="macOS"
               icon={<AppleIcon size={40} />}
-              version="1.0.9"
+              version="1.1.0"
               requirements="macOS 10.15 or later"
-              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.0.9-arm64.dmg"
+              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.1.0-arm64.dmg"
               extension=".dmg"
               highlighted={os === 'macOS'}
             />
             <DownloadCard
               platform="Linux"
               icon={<LinuxIcon size={40} />}
-              version="1.0.9"
+              version="1.1.0"
               requirements="Ubuntu 18.04+, Fedora 32+"
-              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.0.9.AppImage"
+              downloadUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/MyDesk-1.1.0.AppImage"
               extension=".AppImage"
-              altUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/mydesk_1.0.9_amd64.deb"
+              altUrl="https://github.com/Krishna-10-7/mydesk/releases/latest/download/mydesk_1.1.0_amd64.deb"
               altExtension=".deb"
               highlighted={os === 'Linux'}
             />
