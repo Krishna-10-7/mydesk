@@ -1,6 +1,6 @@
 {
     "name": "mydesk",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "Free Remote Desktop Sharing Application",
     "main": "src/main/main.js",
     "author": {
@@ -36,6 +36,10 @@
         "directories": {
             "output": "dist"
         },
+        "asarUnpack": [
+            "**/node_modules/socket.io-client/**/*",
+            "**/node_modules/simple-peer/**/*"
+        ],
         "win": {
             "target": [
                 "nsis",
