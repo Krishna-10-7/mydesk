@@ -5,6 +5,11 @@
     "main": "src/main/main.js",
     "author": "MyDesk Team",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Krishna-10-7/mydesk.git"
+    },
+    "homepage": "https://mydesk.run-time.in",
     "scripts": {
         "dev": "electron .",
         "build": "electron-builder",
@@ -24,6 +29,7 @@
     "build": {
         "appId": "in.runtime.mydesk",
         "productName": "MyDesk",
+        "publish": null,
         "directories": {
             "output": "dist"
         },
