@@ -99,6 +99,8 @@ function showScreen(screenName) {
 // Signaling Server Connection
 // ========================================
 function connectToSignalingServer() {
+    updateServerStatus('connecting', 'Connecting to server...');
+
     // Use socket.io from preload if available, otherwise try CDN
     if (window.socketIO) {
         initializeSocket();
@@ -111,9 +113,27 @@ function connectToSignalingServer() {
         };
         script.onerror = () => {
             console.error('Failed to load Socket.io client');
+            updateServerStatus('error', 'Failed to load socket client');
+            // Fallback to mock socket for offline testing
             socket = createMockSocket();
         };
         document.head.appendChild(script);
+    }
+}
+
+function updateServerStatus(state, message) {
+    const container = document.getElementById('serverStatus');
+    if (!container) return;
+
+    const dot = container.querySelector('.status-dot');
+    const text = container.querySelector('.status-text');
+
+    if (dot) {
+        dot.className = 'status-dot';
+        dot.classList.add(state); // 'connected', 'connecting', 'error'
+    }
+    if (text) {
+        text.textContent = message;
     }
 }
 
@@ -122,16 +142,19 @@ function initializeSocket() {
         console.log('Connecting to signaling server:', SIGNALING_SERVER);
 
         socket = window.socketIO.connect(SIGNALING_SERVER, {
-            transports: ['websocket', 'polling'],
+            transports: ['websocket', 'polling'], // Try websocket first, then polling
             reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000,
+            forceNew: true,
+            timeout: 10000
         });
 
         setupSocketEvents();
         console.log('Socket initialized via preload bridge');
     } catch (error) {
         console.error('Failed to initialize socket:', error);
+        updateServerStatus('error', 'Socket init failed');
         socket = createMockSocket();
     }
 }
@@ -143,14 +166,17 @@ function initializeSocketFromGlobal() {
         socket = io(SIGNALING_SERVER, {
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000,
+            forceNew: true,
+            timeout: 10000
         });
 
         setupSocketEvents();
         console.log('Socket initialized via CDN');
     } catch (error) {
         console.error('Failed to initialize socket:', error);
+        updateServerStatus('error', 'Socket init failed');
         socket = createMockSocket();
     }
 }
@@ -158,14 +184,22 @@ function initializeSocketFromGlobal() {
 function setupSocketEvents() {
     socket.on('connect', () => {
         console.log('Connected to signaling server:', socket.id);
+        updateServerStatus('connected', 'Connected');
     });
 
-    socket.on('disconnect', () => {
-        console.log('Disconnected from signaling server');
+    socket.on('disconnect', (reason) => {
+        console.log('Disconnected from signaling server:', reason);
+        updateServerStatus('error', 'Disconnected');
     });
 
     socket.on('connect_error', (error) => {
         console.error('Connection error:', error.message || error);
+        updateServerStatus('error', 'Connection failed');
+    });
+
+    socket.on('reconnect_attempt', (attempt) => {
+        console.log('Reconnecting attempt:', attempt);
+        updateServerStatus('connecting', `Reconnecting (${attempt})...`);
     });
 
     // Room events
