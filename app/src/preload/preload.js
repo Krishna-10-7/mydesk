@@ -28,7 +28,39 @@ try {
         connect: (url, options) => {
             const socket = io(url, options);
             return {
-                on: (event, callback) => socket.on(event, callback),
+                on: (event, callback) => {
+                    socket.on(event, (...args) => {
+                        // Sanitize args to ensure they are cloneable across context bridge
+                        const sanitizedArgs = args.map(arg => {
+                            if (arg instanceof Error) {
+                                return { message: arg.message, name: arg.name };
+                            }
+                            // Deep clone or return as is if primitive
+                            try {
+                                return JSON.parse(JSON.stringify(arg));
+                            } catch (e) {
+                                return String(arg);
+                            }
+                        });
+                        callback(...sanitizedArgs);
+                    });
+                },
+                once: (event, callback) => {
+                    socket.once(event, (...args) => {
+                        const sanitizedArgs = args.map(arg => {
+                            if (arg instanceof Error) {
+                                return { message: arg.message, name: arg.name };
+                            }
+                            try {
+                                return JSON.parse(JSON.stringify(arg));
+                            } catch (e) {
+                                return String(arg);
+                            }
+                        });
+                        callback(...sanitizedArgs);
+                    });
+                },
+                off: (event) => socket.off(event),
                 emit: (event, data) => socket.emit(event, data),
                 disconnect: () => socket.disconnect(),
                 get connected() { return socket.connected; },
