@@ -3,7 +3,7 @@ let nut = null;
 async function setupRemoteControl() {
     try {
         // nut.js is loaded dynamically as it may not be available in all environments
-        nut = require('@nut-tree/nut-js');
+        nut = require('@nut-tree-fork/nut-js');
         nut.mouse.config.autoDelayMs = 0;
         nut.keyboard.config.autoDelayMs = 0;
         console.log('Remote control initialized successfully');
