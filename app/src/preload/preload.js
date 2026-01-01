@@ -21,59 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getScreenSize: () => ipcRenderer.invoke('get-screen-size'),
 });
 
-// Try to expose socket.io for signaling (graceful fallback if not available)
-try {
-    const { io } = require('socket.io-client');
-    contextBridge.exposeInMainWorld('socketIO', {
-        connect: (url, options) => {
-            const socket = io(url, options);
-            return {
-                on: (event, callback) => {
-                    socket.on(event, (...args) => {
-                        // Sanitize args to ensure they are cloneable across context bridge
-                        const sanitizedArgs = args.map(arg => {
-                            if (arg instanceof Error) {
-                                return { message: arg.message, name: arg.name };
-                            }
-                            // Deep clone or return as is if primitive
-                            try {
-                                return JSON.parse(JSON.stringify(arg));
-                            } catch (e) {
-                                return String(arg);
-                            }
-                        });
-                        callback(...sanitizedArgs);
-                    });
-                },
-                once: (event, callback) => {
-                    socket.once(event, (...args) => {
-                        const sanitizedArgs = args.map(arg => {
-                            if (arg instanceof Error) {
-                                return { message: arg.message, name: arg.name };
-                            }
-                            try {
-                                return JSON.parse(JSON.stringify(arg));
-                            } catch (e) {
-                                return String(arg);
-                            }
-                        });
-                        callback(...sanitizedArgs);
-                    });
-                },
-                off: (event) => socket.off(event),
-                emit: (event, data) => socket.emit(event, data),
-                disconnect: () => socket.disconnect(),
-                get connected() { return socket.connected; },
-                get id() { return socket.id; }
-            };
-        }
-    });
-    console.log('Socket.io loaded successfully in preload');
-} catch (error) {
-    console.warn('Socket.io not available in preload, will use CDN fallback:', error.message);
-    // Expose a null socketIO so renderer knows to use CDN fallback
-    contextBridge.exposeInMainWorld('socketIO', null);
-}
+// Socket.io is now loaded via script tag in index.html for stability
+contextBridge.exposeInMainWorld('socketIO', null);
 
 // Expose platform info
 contextBridge.exposeInMainWorld('platform', {

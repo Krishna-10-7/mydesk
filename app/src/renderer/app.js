@@ -101,24 +101,31 @@ function showScreen(screenName) {
 function connectToSignalingServer() {
     updateServerStatus('connecting', 'Connecting to server...');
 
-    // Use socket.io from preload if available, otherwise try CDN
-    if (window.socketIO) {
+    // Access global io from the script tag
+    if (typeof io !== 'undefined') {
         initializeSocket();
     } else {
-        // Fallback: Load socket.io client from CDN
-        const script = document.createElement('script');
-        script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
-        script.onload = () => {
-            initializeSocketFromGlobal();
-        };
-        script.onerror = () => {
-            console.error('Failed to load Socket.io client');
-            updateServerStatus('error', 'Failed to load socket client');
-            // Fallback to mock socket for offline testing
-            socket = createMockSocket();
-        };
-        document.head.appendChild(script);
+        console.error('Socket.io library not loaded');
+        updateServerStatus('error', 'Library load failed');
+        // Retry loading from CDN as backup
+        loadCDNBackup();
     }
+}
+
+function loadCDNBackup() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+    script.onload = () => {
+        if (typeof io !== 'undefined') {
+            initializeSocket();
+        }
+    };
+    script.onerror = () => {
+        updateServerStatus('error', 'All connection methods failed');
+        updateServerStatus('error', 'Check your internet connection');
+        socket = createMockSocket();
+    };
+    document.head.appendChild(script);
 }
 
 function updateServerStatus(state, message) {
@@ -141,7 +148,8 @@ function initializeSocket() {
     try {
         console.log('Connecting to signaling server:', SIGNALING_SERVER);
 
-        socket = window.socketIO.connect(SIGNALING_SERVER, {
+        // Use global io directly
+        socket = io(SIGNALING_SERVER, {
             transports: ['websocket', 'polling'], // Try websocket first, then polling
             reconnection: true,
             reconnectionAttempts: 10,
@@ -151,29 +159,7 @@ function initializeSocket() {
         });
 
         setupSocketEvents();
-        console.log('Socket initialized via preload bridge');
-    } catch (error) {
-        console.error('Failed to initialize socket:', error);
-        updateServerStatus('error', 'Socket init failed');
-        socket = createMockSocket();
-    }
-}
-
-function initializeSocketFromGlobal() {
-    try {
-        console.log('Connecting to signaling server (CDN):', SIGNALING_SERVER);
-
-        socket = io(SIGNALING_SERVER, {
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 2000,
-            forceNew: true,
-            timeout: 10000
-        });
-
-        setupSocketEvents();
-        console.log('Socket initialized via CDN');
+        console.log('Socket initialized via global io');
     } catch (error) {
         console.error('Failed to initialize socket:', error);
         updateServerStatus('error', 'Socket init failed');
