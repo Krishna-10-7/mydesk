@@ -1,6 +1,6 @@
 {
     "name": "mydesk",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Free Remote Desktop Sharing Application",
     "main": "src/main/main.js",
     "author": {
