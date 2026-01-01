@@ -1,0 +1,130 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+          - os: macos-latest
+            platform: mac
+          - os: ubuntu-latest
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Build Electron app
+        working-directory: ./app
+        run: npm run build:${{ matrix.platform }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            app/dist/*.exe
+            app/dist/*.exe.blockmap
+          retention-days: 5
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            app/dist/*.dmg
+            app/dist/*.zip
+          retention-days: 5
+
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            app/dist/*.AppImage
+            app/dist/*.deb
+          retention-days: 5
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+          path: ./dist
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+          path: ./dist
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: ./dist
+
+      - name: List artifacts
+        run: ls -la ./dist
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: MyDesk ${{ github.ref_name || github.event.inputs.version }}
+          body: |
+            ## MyDesk Release
+            
+            ### Downloads
+            - **Windows**: `MyDesk-Setup.exe` (Installer) or `MyDesk.exe` (Portable)
+            - **macOS**: `MyDesk.dmg`
+            - **Linux**: `MyDesk.AppImage` or `mydesk.deb`
+            
+            ### What's New
+            - Screen sharing with WebRTC
+            - Remote keyboard and mouse control
+            - Modern dark UI
+            
+            ### Requirements
+            - Windows 10+, macOS 10.15+, or Ubuntu 18.04+
+          files: ./dist/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
