@@ -352,8 +352,28 @@ async function selectSource(source) {
         // Set as host
         isHost = true;
 
-        // Create room on server
-        socket?.emit('create-room', { roomId });
+        // Create room on server - check if socket is connected
+        if (socket && socket.connected) {
+            socket.emit('create-room', { roomId });
+            console.log('Room creation request sent for:', roomId);
+        } else {
+            console.warn('Socket not connected, retrying in 2 seconds...');
+            // Show connection status to user
+            document.getElementById('roomIdDisplay').textContent = 'Connecting...';
+
+            // Retry after delay
+            setTimeout(() => {
+                if (socket && socket.connected) {
+                    socket.emit('create-room', { roomId });
+                    document.getElementById('roomIdDisplay').textContent = roomId;
+                    console.log('Room creation request sent (retry) for:', roomId);
+                } else {
+                    console.error('Socket still not connected');
+                    document.getElementById('roomIdDisplay').textContent = roomId + ' (Offline)';
+                    alert('Could not connect to server. Sharing in offline mode.');
+                }
+            }, 2000);
+        }
 
         console.log('Sharing started:', source.name);
     } catch (error) {
@@ -480,14 +500,23 @@ function connectToRoom(targetRoomId) {
     roomId = targetRoomId;
     isHost = false;
 
+    // Check if socket is connected before joining
+    if (!socket || !socket.connected) {
+        console.error('Socket not connected, cannot join room');
+        connectionStatus?.classList.add('hidden');
+        alert('Not connected to server. Please wait a moment and try again.');
+        return;
+    }
+
     // Join room on server - socket events will handle the response
-    socket?.emit('join-room', { roomId });
+    console.log('Attempting to join room:', targetRoomId);
+    socket.emit('join-room', { roomId });
 
     // Timeout if no response after 10 seconds
     setTimeout(() => {
         if (connectionStatus && !connectionStatus.classList.contains('hidden')) {
             connectionStatus.classList.add('hidden');
-            alert('Connection timeout. Please check the room ID and try again.');
+            alert('Connection timeout. The room may not exist or the host has disconnected.');
         }
     }, 10000);
 }
