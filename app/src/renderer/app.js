@@ -3,7 +3,7 @@
    ======================================== */
 
 // Configuration
-const SIGNALING_SERVER = 'https://mydesk-server.glitch.me'; // Update after deploying
+const SIGNALING_SERVER = 'https://mydesk-jpmy.onrender.com'; // Render deployment
 
 // State
 let currentScreen = 'home';
@@ -99,36 +99,135 @@ function showScreen(screenName) {
 // Signaling Server Connection
 // ========================================
 function connectToSignalingServer() {
-    // For now, we'll use a simplified approach that works without socket.io loaded
-    // The actual socket.io connection will be established when the server is deployed
-    console.log('Signaling server connection will be established once deployed');
+    // Load socket.io client from CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+    script.onload = () => {
+        initializeSocket();
+    };
+    script.onerror = () => {
+        console.error('Failed to load Socket.io client');
+        // Fallback to mock socket for offline testing
+        socket = createMockSocket();
+    };
+    document.head.appendChild(script);
+}
 
-    // Create mock socket for development
-    socket = createMockSocket();
+function initializeSocket() {
+    try {
+        socket = io(SIGNALING_SERVER, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to signaling server:', socket.id);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from signaling server');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error.message);
+        });
+
+        // Room events
+        socket.on('room-created', ({ roomId: createdRoomId, success }) => {
+            if (success) {
+                console.log('Room created:', createdRoomId);
+            }
+        });
+
+        socket.on('room-joined', ({ roomId: joinedRoomId, success }) => {
+            if (success) {
+                console.log('Joined room:', joinedRoomId);
+                document.getElementById('connectionStatus')?.classList.add('hidden');
+                document.getElementById('viewerRoomId').textContent = roomId;
+                showScreen('viewer');
+            }
+        });
+
+        socket.on('room-error', ({ error }) => {
+            console.error('Room error:', error);
+            document.getElementById('connectionStatus')?.classList.add('hidden');
+            alert('Connection failed: ' + error);
+        });
+
+        // Viewer connected to our room
+        socket.on('viewer-joined', ({ viewerId, viewerCount }) => {
+            console.log('Viewer joined:', viewerId, 'Total:', viewerCount);
+            updateViewersList(viewerCount);
+        });
+
+        socket.on('viewer-left', ({ viewerId, viewerCount }) => {
+            console.log('Viewer left:', viewerId, 'Total:', viewerCount);
+            updateViewersList(viewerCount);
+        });
+
+        // Start call (host should create offer)
+        socket.on('start-call', async ({ viewerId }) => {
+            console.log('Starting call with viewer:', viewerId);
+            if (isHost && localStream) {
+                createPeerConnection();
+                await createOffer();
+            }
+        });
+
+        // WebRTC signaling
+        socket.on('signal', async ({ signal, senderId }) => {
+            console.log('Received signal from:', senderId, signal.type);
+            await handleSignal(signal);
+        });
+
+        socket.on('ice-candidate', async ({ candidate, senderId }) => {
+            console.log('Received ICE candidate from:', senderId);
+            await handleIceCandidate(candidate);
+        });
+
+        // Host disconnected
+        socket.on('host-disconnected', () => {
+            console.log('Host disconnected');
+            if (!isHost) {
+                document.getElementById('connectionLost')?.classList.remove('hidden');
+            }
+        });
+
+    } catch (error) {
+        console.error('Failed to initialize socket:', error);
+        socket = createMockSocket();
+    }
+}
+
+function updateViewersList(count) {
+    const viewersList = document.getElementById('viewersList');
+    if (viewersList) {
+        if (count > 0) {
+            viewersList.innerHTML = `<p>${count} viewer${count > 1 ? 's' : ''} connected</p>`;
+        } else {
+            viewersList.innerHTML = '<p class="no-viewers">No viewers connected yet</p>';
+        }
+    }
 }
 
 function createMockSocket() {
-    // Mock socket for local testing
+    // Mock socket for offline testing
+    console.log('Using mock socket (offline mode)');
     return {
         connected: false,
         emit: (event, data) => {
-            console.log('Socket emit:', event, data);
-
-            // Simulate responses for testing
+            console.log('Mock emit:', event, data);
             if (event === 'create-room') {
                 setTimeout(() => {
                     roomId = generateRoomId();
                     document.getElementById('roomIdDisplay').textContent = roomId;
-                    console.log('Room created:', roomId);
                 }, 100);
             }
         },
-        on: (event, callback) => {
-            console.log('Socket listener added:', event);
-        },
-        disconnect: () => {
-            console.log('Socket disconnected');
-        }
+        on: () => { },
+        disconnect: () => { }
     };
 }
 
@@ -352,16 +451,16 @@ function connectToRoom(targetRoomId) {
     roomId = targetRoomId;
     isHost = false;
 
-    // Join room on server
+    // Join room on server - socket events will handle the response
     socket?.emit('join-room', { roomId });
 
-    // For development, simulate connection and switch to viewer
+    // Timeout if no response after 10 seconds
     setTimeout(() => {
-        connectionStatus?.classList.add('hidden');
-        document.getElementById('viewerRoomId').textContent = roomId;
-        showScreen('viewer');
-        console.log('Connected to room:', roomId);
-    }, 1500);
+        if (connectionStatus && !connectionStatus.classList.contains('hidden')) {
+            connectionStatus.classList.add('hidden');
+            alert('Connection timeout. Please check the room ID and try again.');
+        }
+    }, 10000);
 }
 
 // ========================================
